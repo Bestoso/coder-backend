@@ -19,14 +19,14 @@ class ProductManager {
             description === undefined ||
             price === undefined ||
             thumbnail === undefined ||
-            stock === undefined) return 'All fields are required'
-        if (typeof price !== 'number') return 'Price must be a number'
-        if (typeof stock !== 'number') return 'Stock must be a number'
+            stock === undefined) return 'All fields are required';
+        if (typeof price !== 'number') return 'Price must be a number';
+        if (typeof stock !== 'number') return 'Stock must be a number';
         fs.writeFileSync(this.path, JSON.stringify(this.products, null, 2));
     }
     updateProduct(id, title, description, price, thumbnail, stock){
         const product = this.products.find(product => product.code === id);
-        if (product === undefined) return 'Not found'
+        if (product === undefined) return 'Not found';
         if (title !== undefined) product.title = title;
         if (description !== undefined) product.description = description;
         if (price !== undefined) product.price = price;
@@ -40,10 +40,11 @@ class ProductManager {
     }
     getProductById(id){
         const product = this.products.find(product => product.code === id);
-        if (product === undefined) return 'Not found'
+        if (product === undefined) return 'Not found';
         return fs.readFileSync(this.path, 'utf-8');
     }
     getProducts(){
+        if (this.products.length === 0) return 'there are no products';
         return fs.readFileSync(this.path, 'utf-8');
     }
 }
