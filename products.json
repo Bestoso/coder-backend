@@ -1,0 +1,10 @@
+[
+  {
+    "code": 1,
+    "title": "fanta",
+    "description": "fanta descripcion",
+    "price": 450,
+    "thumbnail": "imagefanta.jpg",
+    "stock": 20
+  }
+]
