@@ -1,60 +1,122 @@
-const fs = require('fs');
+const fs = require("fs/promises");
 
 class ProductManager {
-    static contador = 0;
-    constructor () {
+    constructor(path) {
+        this.path = path;
         this.products = [];
-        this.path = './products.json';
     }
-    addProduct(title, description, price, thumbnail, stock){
-        this.products.push({
-            code: ProductManager.contador++,
-            title,
-            description,
-            price,
-            thumbnail,
-            stock
-        })
-        if (!title || !description || !price || !thumbnail || !stock) return 'All fields are required';
-        if (typeof price !== 'number') return 'Price must be a number';
-        if (typeof stock !== 'number') return 'Stock must be a number';
-        fs.writeFileSync(this.path, JSON.stringify(this.products, null, 2));
+    
+    async getItems() {
+        const data = await fs.readFile(this.path, "utf-8");
+        const items = await JSON.parse(data);
+        return items;
     }
-    updateProduct(id, title, description, price, thumbnail, stock){
-        const product = this.products.find(product => product.code === id);
-        if (product === undefined) return 'Not found';
-        if (title !== undefined) product.title = title;
-        if (description !== undefined) product.description = description;
-        if (price !== undefined) product.price = price;
-        if (thumbnail !== undefined) product.thumbnail = thumbnail;
-        if (stock !== undefined) product.stock = stock;
-        fs.writeFileSync(this.path, JSON.stringify(this.products, null, 2));
+
+    async writeFile(data) {
+        const stringData = JSON.stringify(data, null, 4);
+        return await fs.writeFile(this.path, stringData, "utf-8");
     }
-    removeProduct(id){
-        this.products = this.products.filter(product => product.code !== id);
-        fs.writeFileSync(this.path, JSON.stringify(this.products, null, 2));
+
+    async getItemById(id) {
+        const items = await this.getItems(); 
+        const itemFound = items.find((item) => item.id === id);
+        if (itemFound) {
+            return itemFound;
+        } else {
+            console.log("Product not found");
+        }
     }
-    getProductById(id){
-        const product = this.products.find(product => product.code === id);
-        if (product === undefined) return 'Not found';
-        return fs.readFileSync(this.path, 'utf-8');
+
+    // METODOS DE PRODUCTOS
+    async addProduct(product) {
+        let products = await this.getItems(); 
+        const newProduct = {
+            id: products.length + 1,
+            ...product
+        }; 
+        products.push(newProduct); 
+        await this.writeFile(products);
+        return products; 
     }
-    getProducts(){
-        if (this.products.length === 0) return 'there are no products';
-        return fs.readFileSync(this.path, 'utf-8');
+
+    async updateProduct(pid, properties) {
+        const products = await this.getItems(); 
+        const productFound = await this.getItemById(pid); 
+        const updatedProduct = { ...productFound, ...properties }; 
+
+        if (productFound) {
+            const updatedList = products.map(prod => { 
+                if (prod.id === updatedProduct.id) {
+                    return updatedProduct; 
+                } else {
+                    return prod; 
+                }
+            });
+            this.writeFile(updatedList); 
+            return updatedList; 
+        } else {
+            console.log("no se encontro el producto"); 
+        }
+    }
+
+    async deleteProduct(pid) {
+        
+        const products = await this.getItems(); 
+        const filteredProducts = products.filter((product) => product.id !== pid); 
+        await this.writeFile(filteredProducts); 
+        return filteredProducts;
+    }
+
+    // METODOS PARA EL CARRITO
+    async createCart() {
+        
+        let cart = await this.getItems(); 
+        const newCart = { id: cart.length + 1, products: [] }; 
+        cart.push(newCart); 
+        await this.writeFile(cart); 
+        return cart; 
+    }
+
+    async addToCart(cid, pid) {
+        let cart = await this.getItems();
+        const order = cart.find((o) => o.orderId === cid);
+
+        if (order) {
+            const productExist = order.products.find((prod) => prod.prodId === pid);
+
+            if (productExist) {
+                const orderPosition = cart.findIndex((order) => order.orderId === cid);
+                const updateProduct = cart[orderPosition].products.find(
+                    (prod) => prod.prodId === pid
+                );
+                const productPosition = cart[orderPosition].products.findIndex(
+                    (prod) => prod.prodId === pid
+                );
+
+                cart[orderPosition].products[productPosition].quantity =
+                updateProduct.quantity + 1;
+                await this.writeFile(cart);
+                return cart;
+
+            } else {
+                const newProduct = { prodId: pid, quantity: 1 };
+                const orderPosition = cart.findIndex((order) => order.orderId === cid);
+                if (orderPosition <= 0) {
+                    cart[orderPosition].products.push(newProduct);
+                    await this.writeFile(cart);
+                    return cart;
+                }
+            }
+        } else {
+            const newOrder = {
+                orderId: cart.length + 1,
+                products: [{ prodId: pid, quantity: 1 }],
+            };
+            cart.push(newOrder);
+            await this.writeFile(cart);
+            return cart;
+        }
     }
 }
 
-const manager = new ProductManager;
-
-manager.addProduct('coca', 'coca cola descripcion', 500, 'imagecoca.jpg', 31);
-manager.addProduct('fanta', 'fanta descripcion', 450, 'imagefanta.jpg', 23);
-
-manager.updateProduct(0, 'coca', 'coca cola descripcion', 500, 'imagecoca.jpg', 10);
-manager.updateProduct(1, 'fanta', 'fanta descripcion', 450, 'imagefanta.jpg', 20);
-
-manager.removeProduct(0);
-
-console.log(manager.getProductById(1));
-
-console.log(manager.getProducts());
+module.exports = ProductManager;
