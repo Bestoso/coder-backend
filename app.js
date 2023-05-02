@@ -15,11 +15,7 @@ class ProductManager {
             thumbnail,
             stock
         })
-        if (title === undefined ||
-            description === undefined ||
-            price === undefined ||
-            thumbnail === undefined ||
-            stock === undefined) return 'All fields are required';
+        if (!title || !description || !price || !thumbnail || !stock) return 'All fields are required';
         if (typeof price !== 'number') return 'Price must be a number';
         if (typeof stock !== 'number') return 'Stock must be a number';
         fs.writeFileSync(this.path, JSON.stringify(this.products, null, 2));
